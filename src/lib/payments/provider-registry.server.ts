@@ -2,7 +2,7 @@
  * Payment Provider Registry — Server-only (requires DB access)
  *
  * resolvePaymentProviderForProperty(propertyId, countryCode)
- *   Consulta property_payment_providers en DB.
+ *   Consulta payment_provider_configs en DB.
  *   Aplica reglas por país sobre los proveedores habilitados.
  */
 
@@ -14,7 +14,7 @@ import type { PaymentProvider } from './types'
  * Determina el proveedor de pago según la configuración específica de la propiedad.
  *
  * Flujo:
- * 1. Consulta los proveedores habilitados en property_payment_providers
+ * 1. Consulta los proveedores habilitados en payment_provider_configs
  * 2. Si ninguno habilitado → retorna null
  * 3. Aplica regla de país (GT → recurrente, resto → stripe)
  * 4. Si la regla de país no tiene match → usa el provider marcado como default
@@ -28,14 +28,18 @@ export async function resolvePaymentProviderForProperty(
 ): Promise<PaymentProvider | null> {
   const admin = createServiceClient()
 
-  const { data, error } = await admin
-    .from('property_payment_providers')
-    .select('provider, is_default')
+  const { data: raw, error } = await admin
+    .from('payment_provider_configs')
+    .select('provider, is_enabled, mode')
     .eq('property_id', propertyId)
     .eq('is_enabled', true)
-    .order('is_default', { ascending: false })
 
-  if (error || !data || data.length === 0) return null
+  const data = (raw ?? []).map((p) => ({
+    provider: p.provider,
+    is_default: p.mode === 'live',
+  }))
+
+  if (error || data.length === 0) return null
 
   const enabled = data as EnabledProvider[]
   const normalized = countryCode.trim().toUpperCase()

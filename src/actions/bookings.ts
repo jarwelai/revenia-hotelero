@@ -77,6 +77,12 @@ export async function createInternalBooking(
   if (roomError) return { error: `Error al validar unidad: ${roomError.message}` }
   if (!room) return { error: 'La unidad no pertenece a esta propiedad o no tienes acceso' }
 
+  const { data: propertyData } = await supabase
+    .from('properties')
+    .select('name')
+    .eq('id', property_id)
+    .single()
+
   // ── 3. computeQuote: disponibilidad + snapshot financiero ─────────────────
   const quoteResult = await computeQuote({
     propertyId: property_id,
@@ -152,6 +158,24 @@ export async function createInternalBooking(
   if (confirmError) {
     await supabase.from('bookings').delete().eq('id', booking.id)
     return { error: `Error al confirmar reserva: ${confirmError.message}` }
+  }
+
+  // ── 7. Email de confirmación (non-blocking) ─────────────────────────────
+  if (guest_email) {
+    import('@/lib/email').then(({ sendBookingConfirmation }) =>
+      sendBookingConfirmation(guest_email!, {
+        guestName: guest_name.trim(),
+        propertyName: propertyData?.name ?? 'Hotel',
+        checkIn: check_in,
+        checkOut: check_out,
+        nights: quoteResult.nights.length,
+        adults,
+        totalAmount: quoteResult.grand_total,
+        currency: quoteResult.currency,
+        bookingRef: booking.id,
+        lang: 'es',
+      }).catch((err) => console.error('[createInternalBooking] Email failed:', err))
+    )
   }
 
   revalidatePath('/dashboard/bookings')

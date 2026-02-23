@@ -94,6 +94,7 @@ El mismo motor de reservas se expone también como agente conversacional via cha
 |-----|-----------------|
 | Propietario / Gerente General de la Org | Configuración inicial (propiedades, tarifas, impuestos, restricciones) |
 | Encargado de Reservas / Recepcionista | Gestión diaria (dashboard, reservas, pagos) |
+| Revenue Manager (externo) | Gestión de tarifas y yield. Puede ser consultor externo con acceso a propiedades de distintos propietarios |
 
 > En propiedades de 20–40 habitaciones, generalmente es la misma persona.
 > En grupos (como Jarwel), el Propietario gestiona múltiples propiedades desde una sola org.
@@ -108,6 +109,7 @@ El mismo motor de reservas se expone también como agente conversacional via cha
 **Segmento de mercado:**
 - Hoteles boutique de 20–40 habitaciones
 - Grupos hoteleros pequeños (2–5 propiedades por org, como Grupo Jarwel)
+- Revenue managers independientes que gestionan múltiples propiedades de distintos dueños
 
 ---
 
@@ -261,8 +263,9 @@ La plataforma soporta dos modos de entrega por propiedad, configurables desde el
 
 #### Modo B — Embed
 - Snippet de JavaScript `<script>` que inyecta el motor de reservas en cualquier sitio externo
-- iFrame fallback para compatibilidad con WordPress y CMS sin JS avanzado
-- Guía de integración WordPress incluida en documentación
+- iFrame fallback para compatibilidad universal (HTML estático, WordPress, CMS)
+- **MVP (Grupo Jarwel):** Los 3 hoteles piloto tienen websites HTML construidos con Lovable → embed via `<script>` tag directo
+- **Post-MVP:** Guía de integración WordPress para atraer hoteles con sitios WP existentes
 - El toggle "Reservar en Web / Reservar con Agente" está disponible dentro del widget embebido
 
 **Toggle UI (aplica a ambos modos):**
@@ -386,12 +389,14 @@ src/features/
    - Templates pre-diseñados adaptados por AI para reducir costos (no construir desde cero)
    - Publicados en subdominio: `[hotel].revenia.app`
    - Si el hotel ya tiene website → puede omitir esto y solo embeber el booking form
-   - Compatible con WordPress via snippet/iframe
+   - **Grupo Jarwel (MVP):** Los 3 hoteles piloto tienen websites HTML construidos con Lovable, NO WordPress
+   - El embed MVP es `<script>` tag en HTML estático — la integración más simple posible
+   - WordPress compatibility es para atraer clientes futuros, no para el piloto
 
 10. **API-first para integraciones futuras:**
     - Revenia debe poder integrarse con ERPs, Channel Managers y sistemas existentes
     - Contratos tipados (Zod) en todas las interfaces del booking engine
-    - MVP: embed en website de Maya Jade + iCal sync
+    - MVP: embed via `<script>` en website HTML (Lovable) de Maya Jade + iCal sync
     - Post-MVP: API REST pública documentada
 
 11. **Reviews estilo Trust Index:**
@@ -399,6 +404,23 @@ src/features/
     - Importar reseñas de OTAs y redes sociales (Google, Booking, Airbnb, Expedia, Facebook, TripAdvisor)
     - Widget embebible para websites existentes
     - Esquema ya soporta `source` por review (manual, google, booking, airbnb, etc.)
+
+12. **Multi-propiedad con vista Portfolio por grupo hotelero:**
+    - Una org puede tener N propiedades (ya soportado por schema)
+    - El admin/owner ve TODAS sus propiedades desde un solo panel
+    - Portfolio muestra métricas y estadísticas por hotel individual
+    - Comparativas entre hoteles del mismo grupo (ocupación, ADR, revenue, conversión)
+    - El sidebar ya tiene property switcher; Portfolio agrega vista consolidada
+    - MVP: dashboard multi-propiedad funcional para Grupo Jarwel (3 hoteles)
+
+13. **Rol Revenue Manager (externo, multi-org):**
+    - Un Revenue Manager profesional puede gestionar propiedades de DISTINTOS dueños
+    - Se implementa invitándolo como `org_member` con role `revenue_manager` en cada org cliente
+    - El RM ve en su dashboard todas las propiedades donde tiene asignación
+    - **Restricción de privacidad:** el RM NO puede comparar hoteles de diferentes orgs/propietarios
+    - Portfolio del RM: muestra métricas individuales por hotel, pero comparativas solo dentro de la misma org
+    - El RM tiene permisos de lectura + gestión de tarifas, NO puede modificar configuración de la propiedad ni pagos
+    - MVP: role básico con acceso. Restricción de comparativas → v1.1
 
 ---
 

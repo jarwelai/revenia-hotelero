@@ -4,7 +4,7 @@ import { getPublicPropertySettings } from '@/actions/public-content'
 import { resolvePublicLang } from '@/lib/public'
 import { CheckoutForm } from '@/features/public-booking/components/CheckoutForm'
 import { LanguageSwitcher } from '@/components/public/LanguageSwitcher'
-import type { BookingQuote, PropertyPaymentProvider } from '@/types/hotelero'
+import type { BookingQuote } from '@/types/hotelero'
 
 interface PageProps {
   params: Promise<{ publicKey: string }>
@@ -39,17 +39,17 @@ export default async function PublicCheckoutPage({ params, searchParams }: PageP
     redirect(`/p/${publicKey}/book?expired=1`)
   }
 
-  // Sprint 3D: Pre-cargar proveedores habilitados para resolución client-side
-  const { data: providersData } = await admin
-    .from('property_payment_providers')
-    .select('provider, is_enabled, is_default')
+  // Pre-cargar proveedores habilitados para resolución client-side
+  const { data: providersRaw } = await admin
+    .from('payment_provider_configs')
+    .select('provider, is_enabled, mode')
     .eq('property_id', property.id)
     .eq('is_enabled', true)
 
-  const enabledProviders = (providersData ?? []) as Pick<
-    PropertyPaymentProvider,
-    'provider' | 'is_enabled' | 'is_default'
-  >[]
+  const enabledProviders = (providersRaw ?? []).map((p) => ({
+    provider: p.provider as 'stripe' | 'recurrente',
+    is_default: p.mode === 'live',
+  }))
 
   const publicSettings = await getPublicPropertySettings(publicKey)
   const lang = resolvePublicLang(publicSettings?.default_lang ?? 'es', queryLang)

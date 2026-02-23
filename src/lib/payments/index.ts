@@ -2,41 +2,55 @@
  * Payment Service Layer — Punto de entrada público
  *
  * Expone createPaymentSession() como interfaz unificada.
- * Determina el proveedor vía resolvePaymentProvider y delega al handler correcto.
+ * Determina el proveedor vía resolvePaymentProvider y delega al driver correcto.
  *
- * Estado actual: MOCK — no llama APIs reales.
- * Cuando se active cada proveedor, reemplazar el mock con el driver correspondiente
- * de src/lib/payment/ (stripe-driver.ts, recurrente.ts).
+ * Nota: El flujo principal de checkout (src/actions/payment.ts) importa los
+ * drivers directamente. Esta capa existe como interfaz genérica para otros
+ * consumidores que necesiten crear sesiones de pago sin orquestar booking.
  */
 
 import type { PaymentSessionInput, PaymentSessionResponse } from './types'
 import { resolvePaymentProvider } from './provider-registry'
+import { createStripeCheckout } from '@/lib/payment/stripe-driver'
+import { createRecurrenteCheckout } from '@/lib/payment/recurrente'
 
-// ─── Mocks internos ──────────────────────────────────────────────────────────
+// ─── Drivers reales ─────────────────────────────────────────────────────────
 
 async function createStripeSession(
   input: PaymentSessionInput,
 ): Promise<PaymentSessionResponse> {
-  // TODO: Reemplazar con createStripeCheckout() de src/lib/payment/stripe-driver.ts
-  // cuando se active Stripe en producción.
+  const result = await createStripeCheckout({
+    amount: input.amount,
+    currency: input.currency,
+    description: input.description,
+    successUrl: input.successUrl,
+    cancelUrl: input.cancelUrl,
+    paymentSessionId: input.referenceId,
+  })
   return {
     provider: 'stripe',
-    sessionId: `mock_stripe_${Date.now()}_${input.referenceId.slice(0, 8)}`,
-    checkoutUrl: input.successUrl,
-    isMock: true,
+    sessionId: result.sessionId,
+    checkoutUrl: result.checkoutUrl,
+    isMock: false,
   }
 }
 
 async function createRecurrenteSession(
   input: PaymentSessionInput,
 ): Promise<PaymentSessionResponse> {
-  // TODO: Reemplazar con createRecurrenteCheckout() de src/lib/payment/recurrente.ts
-  // cuando se active Recurrente en producción.
+  const result = await createRecurrenteCheckout({
+    amount: input.amount,
+    currency: input.currency.toUpperCase(),
+    description: input.description,
+    successUrl: input.successUrl,
+    cancelUrl: input.cancelUrl,
+    referenceId: input.referenceId,
+  })
   return {
     provider: 'recurrente',
-    sessionId: `mock_recurrente_${Date.now()}_${input.referenceId.slice(0, 8)}`,
-    checkoutUrl: input.successUrl,
-    isMock: true,
+    sessionId: result.checkoutId,
+    checkoutUrl: result.checkoutUrl,
+    isMock: false,
   }
 }
 
