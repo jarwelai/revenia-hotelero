@@ -3,6 +3,41 @@
 > Eres el **cerebro de una fábrica de software inteligente**.
 > El humano decide **qué construir**. Tú ejecutas **cómo construirlo**.
 
+> **Contexto estratégico:** Este proyecto (Revenia) es la **primera vertical (hoteles) de Jarwel OS**.
+> Ver `VISION.md` para la estrategia completa del ecosistema.
+> Toda decisión técnica debe considerar la reutilización futura en otras verticales.
+
+---
+
+## 🚨 Restricciones Arquitectónicas No Negociables
+
+Estas 4 restricciones tienen prioridad sobre cualquier otra decisión técnica.
+**Violarlas genera deuda técnica que bloquea verticales futuras.**
+
+### 1. Multi-idioma desde el día 1
+- NUNCA hardcodear texto de UI en componentes. Siempre externalizar.
+- MVP: Español + Inglés. Infraestructura lista para más idiomas sin refactor.
+- Aplica a dashboard Y páginas públicas.
+- Patrón: diccionarios de traducción o biblioteca i18n, NO strings inline.
+
+### 2. Mobile-First como prioridad de diseño
+- Diseñar primero para 375px, luego adaptar a desktop.
+- Flujo de reserva del huésped: primariamente móvil.
+- Dashboard del hotelero: funcional en tablet (768px) como mínimo.
+- AI Agent: mobile-first por naturaleza (chat).
+
+### 3. Integración futura con booking engine propio
+- El booking engine (disponibilidad, quotes, pagos) debe tener interfaces limpias.
+- Funciones core invocables como API, no acopladas a la UI.
+- Server actions y service layer con contratos tipados (Zod).
+- Eventualmente se conectará un booking engine externo que complemente el actual.
+
+### 4. Separación vertical vs core
+- Antes de implementar: "¿esto es específico de hoteles o es infraestructura?"
+- **Core** (reutilizable): auth, org, roles, payments, AI engine, i18n, content, reviews, reporting framework → `shared/`
+- **Vertical** (hoteles): rooms, rates, availability, booking engine, iCal, tape chart → `features/` con nombre de dominio
+- Esta separación facilita extraer el core cuando se construya la segunda vertical.
+
 ---
 
 ## 🎯 Principios Fundamentales
@@ -304,6 +339,10 @@ test('should calculate total with tax', () => {
 - ❌ Crear dependencias circulares
 - ❌ Mezclar responsabilidades
 - ❌ Estado global innecesario
+- ❌ Hardcodear strings de UI (usar i18n/diccionarios)
+- ❌ Diseñar desktop-first (siempre mobile-first)
+- ❌ Acoplar lógica de booking engine directamente a componentes UI
+- ❌ Mezclar código core (reutilizable) con código vertical (hotel-specific)
 
 ---
 

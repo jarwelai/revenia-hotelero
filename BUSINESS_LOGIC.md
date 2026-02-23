@@ -1,8 +1,27 @@
-# 📋 BUSINESS_LOGIC.md - Hotelero
+# 📋 BUSINESS_LOGIC.md - Revenia (Vertical Hotelera)
 
 > Motor de Reservas Directas Multi-Tenant para Hoteles Pequeños y Medianos
-> Generado por SaaS Factory | Fecha: 2026-02-18 | Última revisión: 2026-02-18
+> Primera vertical de **Jarwel OS** — Ver `VISION.md` para estrategia del ecosistema
+> Generado por SaaS Factory | Fecha: 2026-02-18 | Última revisión: 2026-02-22
 > Cliente piloto: Hotel Maya Jade (Grupo Jarwel)
+
+---
+
+## 0. Contexto Estratégico
+
+**Revenia NO es un producto aislado.** Es la primera vertical (hoteles) de Jarwel OS,
+un ecosistema cerrado de software que eventualmente cubrirá retail, e-commerce, servicios
+y holdings multiempresa.
+
+**Implicaciones para este proyecto:**
+- La capa de org/auth/billing/AI es infraestructura core reutilizable
+- La capa de rooms/rates/booking es específica de la vertical hotelera
+- Toda decisión de arquitectura debe preservar esta separación
+- Ver `VISION.md` para las restricciones arquitectónicas no negociables:
+  1. Multi-idioma desde el día 1 (ES/EN en MVP)
+  2. Mobile-first como prioridad de diseño
+  3. Interfaces limpias para integración futura con booking engine propio
+  4. Separación clara entre código vertical y código core
 
 ---
 
@@ -354,42 +373,53 @@ src/features/
 
 ---
 
-### Próximos Pasos
+### Estado de Implementación (actualizado 2026-02-22)
 
 **Fase 1 — Fundación SaaS:**
-1. [ ] Configurar Supabase: crear proyecto, aplicar migraciones con RLS (org_id + property_id)
-2. [ ] Feature: auth + onboarding (creación de org + primera propiedad)
-3. [ ] Feature: org-management (miembros y roles)
-4. [ ] Feature: property-setup (configuración de la propiedad)
-5. [ ] Feature: room-management (tipos de habitación + inventario)
-6. [ ] Feature: rate-management (tarifas + restricciones + impuestos)
+1. [x] Configurar Supabase: proyecto, migraciones con RLS (org_id + property_id)
+2. [x] Feature: auth + onboarding (creación de org + primera propiedad)
+3. [x] Feature: org-management (miembros y roles)
+4. [x] Feature: property-setup (configuración de la propiedad)
+5. [x] Feature: room-management (tipos de habitación + inventario)
+6. [x] Feature: rate-management (tarifas + restricciones + impuestos, ARI grid)
 
 **Fase 2 — Motor Core:**
-7. [ ] Feature: booking-engine (disponibilidad + cotización + bloqueo)
-8. [ ] Feature: payment (Stripe + Recurrente + webhooks idempotentes)
-9. [ ] Feature: reservations dashboard (calendario + estados + canal)
+7. [x] Feature: booking-engine (disponibilidad + cotización + bloqueo con UNIQUE partial index)
+8. [x] Feature: payment (Stripe + Recurrente + webhooks idempotentes + manual/WhatsApp/property)
+9. [x] Feature: reservations dashboard (calendario tape chart + estados + filtros)
 
 **Fase 3 — Canales Huésped (MVP):**
-10. [ ] Feature: delivery Modo A — Full Site (plantilla pública + editor mínimo)
+10. [x] Feature: delivery Modo A — Full Site (landing + flujo público de reserva bilingüe)
 11. [ ] Feature: delivery Modo B — Widget Embed (snippet JS + iFrame)
 12. [ ] Toggle UI "Reservar en Web / Reservar con Agente" (mobile-first)
 13. [ ] Feature: ai-agent web (chat mobile-first + tool-calling)
 
 **Fase 4 — OTA + Automatizaciones Base:**
-14. [ ] Feature: ota-sync (iCal Import/Export + cron + deduplicación)
+14. [~] Feature: ota-sync (iCal Import manual funcional, FALTA cron automático)
 15. [ ] Feature: automations MVP (email confirmación + registro CRM)
 
-**Testing & Deploy:**
-16. [ ] Testing E2E con Playwright (flujo completo de reserva en ambos canales)
-17. [ ] Deploy en Vercel
-18. [ ] Go-live con Hotel Maya Jade (propiedad piloto de Grupo Jarwel)
+**Extras construidos (no planificados originalmente):**
+16. [x] Portfolio multi-propiedad (KPIs, comparativo)
+17. [x] Reviews (CRUD + página pública + embed + aggregate ratings)
+18. [x] Public content manager con AI (OpenRouter, draft/approved, bilingual)
+19. [x] Payment provider config por propiedad (enable/disable, routing por país)
+20. [x] Child pricing rules + tax rules configurables
+21. [x] Deploy en Vercel (auto-deploy desde GitHub)
+
+**Próximos pasos inmediatos:**
+- [ ] i18n infrastructure (diccionarios para dashboard, no solo páginas públicas)
+- [ ] Widget Embed Modo B
+- [ ] AI Agent web (chat + tool-calling)
+- [ ] iCal cron automático
 
 **Post-MVP — v1.1:**
-19. [ ] WhatsApp Business API + recordatorios avanzados
-20. [ ] Channel Manager bidireccional completo
-21. [ ] Reporting avanzado (RevPAR, comparativo OTA vs directas)
+- [ ] WhatsApp Business API + recordatorios avanzados
+- [ ] Channel Manager bidireccional completo
+- [ ] Reporting avanzado (RevPAR, comparativo OTA vs directas)
+- [ ] API Keys storage en dashboard (Sprint 3E)
 
 ---
 
 *"Primero entiende el negocio. Después escribe código."*
 *Este archivo es el Blueprint maestro. El agente lo ejecuta fase por fase.*
+*Revenia es la primera vertical de Jarwel OS. Cada línea de código construye infraestructura.*
