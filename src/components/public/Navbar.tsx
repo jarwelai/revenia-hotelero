@@ -90,7 +90,7 @@ export function Navbar() {
                 href="/login"
                 className="ml-4 px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-body-sm font-semibold rounded-lg transition-colors"
               >
-                Portal Abogado
+                Iniciar Sesion
               </Link>
             </div>
 

@@ -16,7 +16,7 @@ export default function SignupPage() {
 
       <div className="text-center lg:text-left">
         <h1 className="text-display-xs text-foreground">Crea tu cuenta</h1>
-        <p className="mt-2 text-foreground-secondary">Comienza gratis y gestiona tus citas como profesional</p>
+        <p className="mt-2 text-foreground-secondary">Comienza gratis y gestiona las reservas de tu hotel</p>
       </div>
 
       <SignupForm />

@@ -24,7 +24,7 @@ export function HeroSection() {
           <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-1.5 mb-6">
             <span className="w-2 h-2 bg-teal-400 rounded-full" />
             <span className="text-body-sm text-teal-100">
-              Abogados de derecho familiar en {siteConfig.contact.city}, {siteConfig.contact.country}
+              Motor de reservas directas en {siteConfig.contact.city}, {siteConfig.contact.country}
             </span>
           </div>
 

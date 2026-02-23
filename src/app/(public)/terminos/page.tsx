@@ -29,23 +29,23 @@ export default function TerminosPage() {
             </div>
 
             <div>
-              <h2 className="font-heading text-display-xs text-gray-900 mb-3">2. Servicios Legales</h2>
+              <h2 className="font-heading text-display-xs text-gray-900 mb-3">2. Servicios de Reservas</h2>
               <p>
-                La información proporcionada en este sitio web es de carácter general e informativo. No constituye asesoramiento legal. La relación abogado-cliente solo se establece mediante un acuerdo formal de servicios legales firmado por ambas partes.
+                La información proporcionada en este sitio web es de carácter general e informativo. Las reservas realizadas a través de nuestra plataforma están sujetas a las políticas de cada propiedad. La confirmación de una reserva se establece mediante el proceso de pago y la recepción del correo de confirmación.
               </p>
             </div>
 
             <div>
-              <h2 className="font-heading text-display-xs text-gray-900 mb-3">3. Consultas y Comunicaciones</h2>
+              <h2 className="font-heading text-display-xs text-gray-900 mb-3">3. Reservas y Comunicaciones</h2>
               <p>
-                Las consultas realizadas a través de nuestro formulario de contacto o por correo electrónico no establecen una relación abogado-cliente. La información compartida a través de estos medios puede no estar protegida por el privilegio de confidencialidad hasta que se formalice la relación profesional.
+                Las consultas realizadas a través de nuestro formulario de contacto o por correo electrónico no constituyen una reserva confirmada. Las reservas solo se consideran confirmadas tras completar el proceso de pago y recibir la confirmación correspondiente.
               </p>
             </div>
 
             <div>
-              <h2 className="font-heading text-display-xs text-gray-900 mb-3">4. Programación de Citas</h2>
+              <h2 className="font-heading text-display-xs text-gray-900 mb-3">4. Política de Cancelación</h2>
               <p>
-                Las citas programadas a través de nuestro sistema están sujetas a disponibilidad. Nos reservamos el derecho de reprogramar o cancelar citas cuando sea necesario. Le notificaremos con la mayor anticipación posible en caso de cambios.
+                Las reservas están sujetas a las políticas de cancelación de cada propiedad. Nos reservamos el derecho de cancelar reservas cuando sea necesario por circunstancias excepcionales. Le notificaremos con la mayor anticipación posible y se gestionará el reembolso correspondiente según la política aplicable.
               </p>
             </div>
 

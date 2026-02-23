@@ -14,10 +14,10 @@ export function CTABanner() {
         <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
           <div>
             <h2 className="font-heading text-display-sm md:text-display-md text-white mb-3">
-              Llame hoy para hablar sobre su caso de derecho familiar
+              Empieza a recibir reservas directas hoy
             </h2>
             <p className="text-body-lg text-teal-200">
-              Consulta inicial gratuita. Estamos listos para ayudarle.
+              Sin comisiones de OTAs. Tu motor de reservas listo en minutos.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row items-center gap-4 shrink-0">
@@ -32,7 +32,7 @@ export function CTABanner() {
               href="/contacto"
               className="bg-secondary-500 hover:bg-secondary-600 text-white font-bold px-8 py-4 rounded-xl transition-colors shadow-lg uppercase tracking-wider text-body-sm"
             >
-              Agendar Consulta
+              Solicitar Demo
             </Link>
           </div>
         </div>

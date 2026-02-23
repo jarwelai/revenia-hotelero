@@ -22,7 +22,7 @@ test.describe('Auth Pages - Sin autenticacion', () => {
     await page.goto('/signup')
 
     await expect(page.getByText('Crea tu cuenta')).toBeVisible()
-    await expect(page.getByText('Comienza gratis y gestiona tus citas como profesional')).toBeVisible()
+    await expect(page.getByText('Comienza gratis y gestiona las reservas de tu hotel')).toBeVisible()
 
     await expect(page.locator('#email')).toBeVisible()
     await expect(page.locator('#password')).toBeVisible()
@@ -64,7 +64,7 @@ test.describe('Auth Pages - Sin autenticacion', () => {
   test('login con credenciales validas redirige a dashboard', async ({ page }) => {
     await page.goto('/login')
 
-    await page.locator('#email').fill('juan.perez@lexagenda.com')
+    await page.locator('#email').fill('test@revenia.com')
     await page.locator('#password').fill('password123')
     await page.getByRole('button', { name: 'Iniciar Sesión' }).click()
 
@@ -78,8 +78,8 @@ test.describe('Auth Pages - Sin autenticacion', () => {
     await expect(page).toHaveURL(/^\/$/)
   })
 
-  test('branding LexAgenda visible en auth layout', async ({ page }) => {
+  test('branding Revenia visible en auth layout', async ({ page }) => {
     await page.goto('/login')
-    await expect(page.getByText('Gestiona tus citas legales con profesionalismo')).toBeVisible()
+    await expect(page.getByText('Motor de reservas directas para hoteles')).toBeVisible()
   })
 })

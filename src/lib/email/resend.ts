@@ -18,6 +18,6 @@ export function getResend(): Resend {
 // Note: Use 'onboarding@resend.dev' for testing without verified domain
 // Change to your verified domain in production
 export const EMAIL_CONFIG = {
-  from: process.env.RESEND_FROM_EMAIL || 'LexAgenda <onboarding@resend.dev>',
+  from: process.env.RESEND_FROM_EMAIL || 'Revenia <onboarding@resend.dev>',
   replyTo: 'sinsajo.creators@gmail.com',
 }
