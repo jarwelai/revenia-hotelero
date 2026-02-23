@@ -13,9 +13,6 @@ import { constructStripeEvent } from '@/lib/payment/stripe-driver'
 import { finalizeBookingPayment } from '@/lib/payment/finalize'
 import type Stripe from 'stripe'
 
-// Necesario para leer body como Buffer (Stripe requiere el raw body)
-export const config = { api: { bodyParser: false } }
-
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const rawBody = Buffer.from(await req.arrayBuffer())
   const signature = req.headers.get('stripe-signature') ?? ''

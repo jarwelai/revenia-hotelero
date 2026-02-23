@@ -66,8 +66,10 @@ export async function createPaymentSession(
 export {
   resolvePaymentProvider,
   resolveFromEnabledProviders,
-  resolvePaymentProviderForProperty,
 } from './provider-registry'
+export {
+  resolvePaymentProviderForProperty,
+} from './provider-registry.server'
 export type {
   PaymentProvider,
   PaymentIntentResult,
