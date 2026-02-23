@@ -130,7 +130,7 @@ export function ContactForm() {
           value={formData.message}
           onChange={(e) => { setFormData({ ...formData, message: e.target.value }); setErrors({ ...errors, message: undefined }) }}
           className={`w-full px-4 py-3 rounded-xl border ${errors.message ? 'border-error-500' : 'border-gray-200'} focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-colors text-body-md resize-none`}
-          placeholder="Describa brevemente su situación legal..."
+          placeholder="Cuéntenos sobre su hotel y cómo podemos ayudarle..."
         />
         {errors.message && <p className="text-error-500 text-body-xs mt-1">{errors.message}</p>}
       </div>

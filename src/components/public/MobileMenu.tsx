@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { siteConfig } from '@/config/siteConfig'
-import { ScaleIcon, CloseIcon, ChevronDownIcon, PhoneIcon, MailIcon, MapPinIcon } from './icons'
+import { HotelIcon, CloseIcon, ChevronDownIcon, PhoneIcon, MailIcon, MapPinIcon } from './icons'
 
 interface MobileMenuProps {
   open: boolean
@@ -25,7 +25,7 @@ export function MobileMenu({ open, onClose }: MobileMenuProps) {
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <Link href="/" className="flex items-center gap-2" onClick={onClose}>
-            <ScaleIcon className="w-6 h-6 text-teal-600" />
+            <HotelIcon className="w-6 h-6 text-teal-600" />
             <span className="font-heading font-bold text-teal-800">{siteConfig.firmName}</span>
           </Link>
           <button onClick={onClose} className="p-2 text-gray-500 hover:text-gray-700" aria-label="Cerrar menú">

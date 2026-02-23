@@ -12,8 +12,8 @@ export function TabbedContent() {
     <section id="enfoque" className="py-20 lg:py-28 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeading
-          label="Servicios jurídicos familiares básicos"
-          title="Un enfoque holístico para brindar servicios jurídicos familiares"
+          label="Diseñado para cada tipo de alojamiento"
+          title="Una plataforma flexible que se adapta a tu propiedad"
         />
 
         <div className="mt-14 max-w-4xl mx-auto">

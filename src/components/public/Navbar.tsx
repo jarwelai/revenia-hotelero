@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { siteConfig } from '@/config/siteConfig'
-import { ScaleIcon, ChevronDownIcon, MenuIcon } from './icons'
+import { HotelIcon, ChevronDownIcon, MenuIcon } from './icons'
 import { MobileMenu } from './MobileMenu'
 
 export function Navbar() {
@@ -35,7 +35,7 @@ export function Navbar() {
           <div className="flex items-center justify-between h-20">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2.5 group">
-              <ScaleIcon className="w-8 h-8 text-teal-600 group-hover:text-teal-700 transition-colors" />
+              <HotelIcon className="w-8 h-8 text-teal-600 group-hover:text-teal-700 transition-colors" />
               <div>
                 <span className="font-heading text-xl font-bold text-teal-800 tracking-tight">
                   {siteConfig.firmName.split(' ')[0]}

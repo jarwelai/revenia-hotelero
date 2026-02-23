@@ -10,7 +10,7 @@ export function TopBar() {
         <div className="flex items-center justify-between h-10 text-body-sm">
           <div className="flex items-center gap-6">
             <span className="text-teal-200 hidden lg:inline">
-              Servicios de derecho familiar en {siteConfig.contact.city}, {siteConfig.contact.country}
+              Motor de reservas directas para hoteles
             </span>
             <a href={`mailto:${contact.email}`} className="flex items-center gap-1.5 hover:text-teal-200 transition-colors">
               <MailIcon className="w-3.5 h-3.5" />

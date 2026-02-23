@@ -16,7 +16,7 @@ export function ValueCards() {
               </div>
               <div>
                 <p className="text-body-xs text-teal-600 font-semibold uppercase tracking-wider mb-1">
-                  {value.icon === 'respect' ? 'Respeto y dignidad' : value.icon === 'quality' ? 'Cada caso es único' : 'Equipo experimentado'}
+                  {value.icon === 'results' ? 'Ahorra en comisiones' : value.icon === 'quality' ? 'Fácil y rápido' : 'Siempre contigo'}
                 </p>
                 <h3 className="font-heading text-display-xs text-gray-900 mb-2">{value.title}</h3>
                 <p className="text-body-sm text-foreground-secondary leading-relaxed">{value.description}</p>

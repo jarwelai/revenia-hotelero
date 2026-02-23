@@ -367,9 +367,38 @@ src/features/
 
 5. **Pasarela por regla configurable:** La selección Stripe/Recurrente es una regla configurada por el gerente en `payment_gateway_configs` (no hardcodeada). Ejemplo de regla: "si el huésped solicita factura fiscal → Recurrente; si no → Stripe".
 
-6. **iCal baseline para OTAs:** MVP expone Import/Export iCal por canal OTA + cron de sync. La sincronización es unidireccional (bloqueo de fechas ya ocupadas). Channel Manager bidireccional completo requiere mapeo de tarifas y cupos por OTA → v1.1.
+6. **iCal bidireccional con MotoPress como fuente de verdad (MVP):**
+   - Los 3 hoteles del Grupo Jarwel usan MotoPress como booking engine actual
+   - MotoPress conecta con OTAs (Booking, Expedia, Airbnb) via iCal
+   - **Estrategia "shadow":** Revenia arranca como booking engine en la sombra junto a MotoPress
+   - Cuando una OTA o MotoPress recibe reserva → Revenia recibe actualización de inventario via iCal
+   - Cuando Revenia recibe reserva directa → actualiza MotoPress via iCal export
+   - MotoPress sigue siendo fuente de verdad bidireccional con OTAs
+   - Revenia gradualmente reemplaza MotoPress conforme se valida el sistema
+   - Channel Manager bidireccional completo (sin MotoPress) → v1.1
 
 7. **Modos de entrega independientes:** Full Site y Embed comparten el mismo booking-engine y AI Agent. La diferencia es únicamente el wrapper de presentación. Ambos soportan el toggle Web/Agente.
+
+8. **Referencia de diseño: Booking.com.** La mayoría de hoteleros ya trabajan con Booking.com. El modelo de publicar un hotel (habitaciones, tarifas, fotos, políticas) debe sentirse familiar para alguien que ya conoce Booking. Revenia NO es una OTA, pero la experiencia de configuración del hotel debe ser análoga.
+
+9. **Website builder con templates AI-optimizados:**
+   - Revenia permite a hoteles crear una página web partiendo de su información + un template
+   - Templates pre-diseñados adaptados por AI para reducir costos (no construir desde cero)
+   - Publicados en subdominio: `[hotel].revenia.app`
+   - Si el hotel ya tiene website → puede omitir esto y solo embeber el booking form
+   - Compatible con WordPress via snippet/iframe
+
+10. **API-first para integraciones futuras:**
+    - Revenia debe poder integrarse con ERPs, Channel Managers y sistemas existentes
+    - Contratos tipados (Zod) en todas las interfaces del booking engine
+    - MVP: embed en website de Maya Jade + iCal sync
+    - Post-MVP: API REST pública documentada
+
+11. **Reviews estilo Trust Index:**
+    - Publicar reseñas en la página web del hotel
+    - Importar reseñas de OTAs y redes sociales (Google, Booking, Airbnb, Expedia, Facebook, TripAdvisor)
+    - Widget embebible para websites existentes
+    - Esquema ya soporta `source` por review (manual, google, booking, airbnb, etc.)
 
 ---
 
