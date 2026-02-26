@@ -2,26 +2,33 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { GuestSelector } from '@/shared/components/GuestSelector'
 import type { PublicLang } from '@/types/hotelero'
 
 interface BookWidgetProps {
   publicKey: string
   lang: PublicLang
   hasChildPricing: boolean
+  hasPetPolicy?: boolean
   defaultCheckIn?: string
   defaultCheckOut?: string
   defaultAdults?: number
   defaultChildrenAges?: number[]
+  defaultHasPets?: boolean
+  defaultPetCount?: number
 }
 
 export function BookWidget({
   publicKey,
   lang,
   hasChildPricing,
+  hasPetPolicy,
   defaultCheckIn,
   defaultCheckOut,
   defaultAdults,
   defaultChildrenAges,
+  defaultHasPets,
+  defaultPetCount,
 }: BookWidgetProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -32,21 +39,9 @@ export function BookWidget({
   const [checkIn, setCheckIn] = useState(defaultCheckIn ?? '')
   const [checkOut, setCheckOut] = useState(defaultCheckOut ?? '')
   const [adults, setAdults] = useState(defaultAdults ?? 2)
-  const [childrenCount, setChildrenCount] = useState(defaultChildrenAges?.length ?? 0)
   const [childrenAges, setChildrenAges] = useState<number[]>(defaultChildrenAges ?? [])
-
-  function handleChildrenCountChange(count: number) {
-    setChildrenCount(count)
-    setChildrenAges((prev) => Array.from({ length: count }, (_, i) => prev[i] ?? 0))
-  }
-
-  function handleChildAgeChange(index: number, age: number) {
-    setChildrenAges((prev) => {
-      const next = [...prev]
-      next[index] = age
-      return next
-    })
-  }
+  const [hasPets, setHasPets] = useState(defaultHasPets ?? false)
+  const [petCount, setPetCount] = useState(defaultPetCount ?? 1)
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -60,8 +55,12 @@ export function BookWidget({
       lang,
     })
 
-    if (childrenCount > 0) {
+    if (childrenAges.length > 0) {
       params.set('children', childrenAges.join(','))
+    }
+
+    if (hasPets && petCount > 0) {
+      params.set('pets', String(petCount))
     }
 
     startTransition(() => {
@@ -101,74 +100,25 @@ export function BookWidget({
         </div>
       </div>
 
-      {/* Adultos */}
+      {/* Huéspedes */}
       <div>
         <label className="block text-xs font-medium text-foreground-muted mb-1">
-          {lang === 'en' ? 'Adults' : 'Adultos'}
+          {lang === 'en' ? 'Guests' : 'Huéspedes'}
         </label>
-        <select
-          value={adults}
-          onChange={(e) => setAdults(Number(e.target.value))}
-          className="w-full px-3 py-2 rounded-xl border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary-500"
-        >
-          {[1, 2, 3, 4, 5, 6].map((n) => (
-            <option key={n} value={n}>{n}</option>
-          ))}
-        </select>
+        <GuestSelector
+          adults={adults}
+          onAdultsChange={setAdults}
+          childrenAges={childrenAges}
+          onChildrenAgesChange={setChildrenAges}
+          showPets={hasPetPolicy}
+          hasPets={hasPets}
+          onHasPetsChange={setHasPets}
+          petCount={petCount}
+          onPetCountChange={setPetCount}
+          lang={lang}
+          mode="popover"
+        />
       </div>
-
-      {/* Niños — solo si la propiedad tiene child pricing */}
-      {hasChildPricing && (
-        <div className="space-y-3">
-          <div>
-            <label className="block text-xs font-medium text-foreground-muted mb-1">
-              {lang === 'en' ? 'Children' : 'Niños'}
-            </label>
-            <select
-              value={childrenCount}
-              onChange={(e) => handleChildrenCountChange(Number(e.target.value))}
-              className="w-full px-3 py-2 rounded-xl border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary-500"
-            >
-              {[0, 1, 2, 3, 4, 5].map((n) => (
-                <option key={n} value={n}>
-                  {n === 0
-                    ? (lang === 'en' ? 'No children' : 'Sin niños')
-                    : `${n} ${n === 1
-                        ? (lang === 'en' ? 'child' : 'niño')
-                        : (lang === 'en' ? 'children' : 'niños')}`}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {childrenCount > 0 && (
-            <div className="space-y-2">
-              {Array.from({ length: childrenCount }, (_, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <span className="text-xs text-foreground-muted w-20 shrink-0">
-                    {lang === 'en' ? `Child ${i + 1}` : `Niño ${i + 1}`}
-                  </span>
-                  <select
-                    value={childrenAges[i] ?? 0}
-                    onChange={(e) => handleChildAgeChange(i, Number(e.target.value))}
-                    className="flex-1 px-3 py-2 rounded-xl border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  >
-                    {Array.from({ length: 18 }, (_, age) => (
-                      <option key={age} value={age}>
-                        {age === 0
-                          ? (lang === 'en' ? '< 1 year' : '< 1 año')
-                          : `${age} ${lang === 'en'
-                              ? (age === 1 ? 'year' : 'years')
-                              : (age === 1 ? 'año' : 'años')}`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       <button
         type="submit"

@@ -99,6 +99,8 @@ export interface Booking {
   children_count: number | null
   subtotal: number | null
   taxes_total: number | null
+  has_pets: boolean
+  pet_count: number
 }
 
 export interface BookingNight {
@@ -114,6 +116,7 @@ export interface BookingNight {
   children_count: number | null
   extras_adults: number | null
   extras_children: number | null
+  extras_pets: number | null
   taxes: number | null
 }
 
@@ -219,6 +222,8 @@ export interface PropertyCommercialSettings {
   base_occupancy: number
   extra_adult_fee: number
   child_policy_enabled: boolean
+  pet_policy_enabled: boolean
+  pet_fee: number
   created_at: string
   updated_at: string
 }
@@ -250,6 +255,7 @@ export interface NightQuote {
   base_rate: number | null
   extras_adults: number
   extras_children: number
+  extras_pets: number
   subtotal: number     // base_rate + extras (0 si base_rate es null)
   taxes: number
   total_rate: number   // subtotal + taxes (exclusive) o subtotal (inclusive)
@@ -362,6 +368,8 @@ export interface BookingQuote {
   check_out: string
   adults: number
   children_ages: number[]
+  has_pets: boolean
+  pet_count: number
   lang: PublicLang
   quote_payload: QuoteResult
   expires_at: string

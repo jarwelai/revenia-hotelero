@@ -58,6 +58,8 @@ export interface SaveCommercialSettingsInput {
   base_occupancy: number
   extra_adult_fee: number
   child_policy_enabled: boolean
+  pet_policy_enabled: boolean
+  pet_fee: number
 }
 
 export async function saveCommercialSettings(
@@ -82,6 +84,8 @@ export async function saveCommercialSettings(
         base_occupancy: input.base_occupancy,
         extra_adult_fee: input.extra_adult_fee,
         child_policy_enabled: input.child_policy_enabled,
+        pet_policy_enabled: input.pet_policy_enabled,
+        pet_fee: input.pet_fee,
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'property_id' },

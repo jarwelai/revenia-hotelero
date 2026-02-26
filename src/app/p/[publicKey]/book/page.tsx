@@ -17,12 +17,21 @@ interface PageProps {
     checkOut?: string
     adults?: string
     children?: string
+    pets?: string
   }>
 }
 
 export default async function PublicBookPage({ params, searchParams }: PageProps) {
   const { publicKey } = await params
-  const { lang: queryLang, expired, checkIn, checkOut, adults: adultsStr, children: childrenStr } = await searchParams
+  const {
+    lang: queryLang,
+    expired,
+    checkIn,
+    checkOut,
+    adults: adultsStr,
+    children: childrenStr,
+    pets: petsStr,
+  } = await searchParams
 
   const supabase = createServiceClient()
   const { data: property } = await supabase
@@ -45,11 +54,22 @@ export default async function PublicBookPage({ params, searchParams }: PageProps
 
   const hasChildPricing = (childRulesCount ?? 0) > 0
 
+  // Obtener configuracion de politica de mascotas
+  const { data: commercialSettings } = await supabase
+    .from('property_commercial_settings')
+    .select('pet_policy_enabled')
+    .eq('property_id', property.id)
+    .maybeSingle()
+
+  const hasPetPolicy = commercialSettings?.pet_policy_enabled ?? false
+
   // Parsear defaults de searchParams
   const defaultAdults = adultsStr ? (parseInt(adultsStr, 10) || 2) : 2
   const defaultChildrenAges: number[] = childrenStr
     ? childrenStr.split(',').map(Number).filter((n) => !isNaN(n) && n >= 0)
     : []
+  const defaultPetCount = petsStr ? (parseInt(petsStr, 10) || 0) : 0
+  const defaultHasPets = defaultPetCount > 0
 
   // Búsqueda con fechas específicas si se proporcionan
   let searchResults: PublicRoomTypeSearchResult[] | null = null
@@ -100,10 +120,13 @@ export default async function PublicBookPage({ params, searchParams }: PageProps
           publicKey={publicKey}
           lang={lang}
           hasChildPricing={hasChildPricing}
+          hasPetPolicy={hasPetPolicy}
           defaultCheckIn={checkIn}
           defaultCheckOut={checkOut}
           defaultAdults={defaultAdults}
           defaultChildrenAges={defaultChildrenAges}
+          defaultHasPets={defaultHasPets}
+          defaultPetCount={defaultPetCount}
         />
 
         {searchError && (
@@ -167,6 +190,8 @@ export default async function PublicBookPage({ params, searchParams }: PageProps
                     checkOut={checkOut!}
                     adults={parseInt(adultsStr!, 10) || 1}
                     childrenAges={defaultChildrenAges}
+                    hasPets={defaultHasPets}
+                    petCount={defaultPetCount}
                   />
                 </div>
               ))

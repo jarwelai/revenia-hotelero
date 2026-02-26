@@ -3,30 +3,30 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createInternalBooking } from '@/actions/bookings'
+import { GuestSelector } from '@/shared/components/GuestSelector'
 import type { Room } from '@/types/hotelero'
 
 interface BookingFormProps {
   propertyId: string
   rooms: Pick<Room, 'id' | 'name'>[]
+  hasPetPolicy?: boolean
 }
 
-export function BookingForm({ propertyId, rooms }: BookingFormProps) {
+export function BookingForm({ propertyId, rooms, hasPetPolicy }: BookingFormProps) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const [childrenCount, setChildrenCount] = useState(0)
+  const [adults, setAdults] = useState(2)
+  const [childrenAges, setChildrenAges] = useState<number[]>([])
+  const [hasPets, setHasPets] = useState(false)
+  const [petCount, setPetCount] = useState(0)
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
 
     const fd = new FormData(e.currentTarget)
-
-    const adults = parseInt(fd.get('adults') as string) || 1
-    const children_ages = Array.from({ length: childrenCount }, (_, i) =>
-      parseInt(fd.get(`child_age_${i}`) as string) || 0,
-    )
 
     const input = {
       property_id: propertyId,
@@ -37,7 +37,9 @@ export function BookingForm({ propertyId, rooms }: BookingFormProps) {
       guest_email: (fd.get('guest_email') as string)?.trim() || null,
       guest_phone: (fd.get('guest_phone') as string)?.trim() || null,
       adults,
-      children_ages,
+      children_ages: childrenAges,
+      has_pets: hasPets,
+      pet_count: petCount,
     }
 
     startTransition(async () => {
@@ -118,60 +120,19 @@ export function BookingForm({ propertyId, rooms }: BookingFormProps) {
         <legend className="text-sm font-semibold text-foreground-secondary uppercase tracking-wider">
           Ocupación
         </legend>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="adults" className="block text-sm font-medium text-foreground mb-1.5">
-              Adultos <span className="text-error-500">*</span>
-            </label>
-            <input
-              id="adults"
-              type="number"
-              name="adults"
-              min="1"
-              max="20"
-              defaultValue="2"
-              required
-              className={inputCls}
-            />
-          </div>
-          <div>
-            <label htmlFor="children_count_ui" className="block text-sm font-medium text-foreground mb-1.5">
-              Niños
-            </label>
-            <input
-              id="children_count_ui"
-              type="number"
-              min="0"
-              max="10"
-              value={childrenCount}
-              onChange={(e) => setChildrenCount(Math.max(0, parseInt(e.target.value) || 0))}
-              className={inputCls}
-            />
-          </div>
-        </div>
-
-        {/* Edades dinámicas de niños */}
-        {childrenCount > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {Array.from({ length: childrenCount }, (_, i) => (
-              <div key={i}>
-                <label className="block text-sm font-medium text-foreground mb-1.5">
-                  Edad niño {i + 1}
-                </label>
-                <input
-                  type="number"
-                  name={`child_age_${i}`}
-                  min="0"
-                  max="17"
-                  required
-                  placeholder="0-17"
-                  className={inputCls}
-                />
-              </div>
-            ))}
-          </div>
-        )}
+        <GuestSelector
+          adults={adults}
+          onAdultsChange={setAdults}
+          childrenAges={childrenAges}
+          onChildrenAgesChange={setChildrenAges}
+          showPets={hasPetPolicy}
+          hasPets={hasPets}
+          onHasPetsChange={setHasPets}
+          petCount={petCount}
+          onPetCountChange={setPetCount}
+          lang="es"
+          mode="inline"
+        />
       </fieldset>
 
       {/* Huésped */}

@@ -26,46 +26,60 @@ export function TaxRulesManager({
     setError(null)
 
     startTransition(async () => {
-      const result = await createTaxRule({
-        property_id: propertyId,
-        name,
-        value: parseFloat(value) || 0,
-      })
+      try {
+        const result = await createTaxRule({
+          property_id: propertyId,
+          name,
+          value: parseFloat(value) || 0,
+        })
 
-      if (result.error) {
-        setError(result.error)
-        return
-      }
+        if (result.error) {
+          setError(result.error)
+          return
+        }
 
-      if (result.rule) {
-        setRules((prev) => [...prev, result.rule!])
+        if (result.rule) {
+          setRules((prev) => [...prev, result.rule!])
+        }
+        setName('')
+        setValue('')
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error inesperado al agregar impuesto')
       }
-      setName('')
-      setValue('')
     })
   }
 
   const handleToggle = (ruleId: string, currentActive: boolean) => {
+    setError(null)
     startTransition(async () => {
-      const result = await toggleTaxRule(ruleId, !currentActive)
-      if (result.error) {
-        setError(result.error)
-        return
+      try {
+        const result = await toggleTaxRule(ruleId, !currentActive)
+        if (result.error) {
+          setError(result.error)
+          return
+        }
+        setRules((prev) => prev.map((r) =>
+          r.id === ruleId ? { ...r, is_active: !currentActive } : r,
+        ))
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error inesperado')
       }
-      setRules((prev) => prev.map((r) =>
-        r.id === ruleId ? { ...r, is_active: !currentActive } : r,
-      ))
     })
   }
 
   const handleDelete = (ruleId: string) => {
+    setError(null)
     startTransition(async () => {
-      const result = await deleteTaxRule(ruleId)
-      if (result.error) {
-        setError(result.error)
-        return
+      try {
+        const result = await deleteTaxRule(ruleId)
+        if (result.error) {
+          setError(result.error)
+          return
+        }
+        setRules((prev) => prev.filter((r) => r.id !== ruleId))
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error inesperado')
       }
-      setRules((prev) => prev.filter((r) => r.id !== ruleId))
     })
   }
 

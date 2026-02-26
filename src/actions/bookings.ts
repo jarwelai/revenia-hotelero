@@ -17,6 +17,8 @@ export interface CreateInternalBookingInput {
   guest_phone?: string | null
   adults?: number          // default 1 — backwards compatible
   children_ages?: number[] // default [] — backwards compatible
+  has_pets?: boolean
+  pet_count?: number
 }
 
 export interface BookingResult {
@@ -57,6 +59,8 @@ export async function createInternalBooking(
 
   const adults = input.adults ?? 1
   const children_ages = input.children_ages ?? []
+  const has_pets = input.has_pets ?? false
+  const pet_count = input.pet_count ?? 0
 
   // ── 1. Validar fechas y nombre ────────────────────────────────────────────
   if (!check_in || !check_out) return { error: 'Las fechas son requeridas' }
@@ -91,6 +95,8 @@ export async function createInternalBooking(
     checkOut: check_out,
     adults,
     childrenAges: children_ages,
+    hasPets: has_pets,
+    petCount: pet_count,
   })
 
   if (quoteResult.error) return { error: quoteResult.error }
@@ -114,6 +120,8 @@ export async function createInternalBooking(
       subtotal: quoteResult.subtotal,
       taxes_total: quoteResult.taxes_total,
       total_amount: quoteResult.grand_total,
+      has_pets,
+      pet_count,
     })
     .select()
     .single()
@@ -137,6 +145,7 @@ export async function createInternalBooking(
           base_rate: nq.base_rate,
           extras_adults: nq.extras_adults,
           extras_children: nq.extras_children,
+          extras_pets: nq.extras_pets,
           taxes: nq.taxes,
           total_rate: nq.total_rate,
         })),

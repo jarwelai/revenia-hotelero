@@ -24,13 +24,15 @@ export interface CreatePublicQuoteInput {
   checkOut: string   // YYYY-MM-DD
   adults: number
   childrenAges: number[]
+  hasPets?: boolean
+  petCount?: number
   lang?: PublicLang
 }
 
 export async function createPublicQuote(
   input: CreatePublicQuoteInput,
 ): Promise<{ quoteId?: string; error?: string }> {
-  const { publicKey, roomTypeId, checkIn, checkOut, adults, childrenAges, lang = 'es' } = input
+  const { publicKey, roomTypeId, checkIn, checkOut, adults, childrenAges, hasPets, petCount, lang = 'es' } = input
   const admin = createServiceClient()
 
   // 1. Resolver propiedad por public_key
@@ -69,6 +71,8 @@ export async function createPublicQuote(
     checkOut,
     adults,
     childrenAges,
+    hasPets,
+    petCount,
   })
 
   if (quote.error) return { error: quote.error }
@@ -95,6 +99,8 @@ export async function createPublicQuote(
       check_out: checkOut,
       adults,
       children_ages: childrenAges,
+      has_pets: hasPets ?? false,
+      pet_count: petCount ?? 0,
       lang,
       quote_payload: quote,
       expires_at: expiresAt,
@@ -175,6 +181,8 @@ export async function confirmPublicBooking(
   // 7. Parsear quote_payload
   const quote = bq.quote_payload as QuoteResult
   const childrenAges = (bq.children_ages as number[]) ?? []
+  const hasPets = bq.has_pets ?? false
+  const petCountVal = bq.pet_count ?? 0
 
   // 8. INSERT booking en estado 'hold', source='direct'
   const { data: booking, error: bookingError } = await admin
@@ -195,6 +203,8 @@ export async function confirmPublicBooking(
       subtotal: quote.subtotal,
       taxes_total: quote.taxes_total,
       total_amount: quote.grand_total,
+      has_pets: hasPets,
+      pet_count: petCountVal,
     })
     .select()
     .single()
@@ -218,6 +228,7 @@ export async function confirmPublicBooking(
           base_rate: nq.base_rate,
           extras_adults: nq.extras_adults,
           extras_children: nq.extras_children,
+          extras_pets: nq.extras_pets,
           taxes: nq.taxes,
           total_rate: nq.total_rate,
         })),

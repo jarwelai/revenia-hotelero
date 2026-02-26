@@ -25,6 +25,12 @@ export default async function NewBookingPage() {
     .eq('property_id', property.id)
     .order('name')
 
+  const { data: commercialSettings } = await supabase
+    .from('property_commercial_settings')
+    .select('pet_policy_enabled')
+    .eq('property_id', property.id)
+    .maybeSingle()
+
   return (
     <div className="p-8 max-w-2xl">
       {/* Header */}
@@ -45,6 +51,7 @@ export default async function NewBookingPage() {
         <BookingForm
           propertyId={property.id}
           rooms={(rooms ?? []) as Pick<Room, 'id' | 'name'>[]}
+          hasPetPolicy={commercialSettings?.pet_policy_enabled ?? false}
         />
       </div>
     </div>

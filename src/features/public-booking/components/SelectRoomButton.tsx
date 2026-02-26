@@ -13,6 +13,8 @@ interface SelectRoomButtonProps {
   checkOut: string
   adults: number
   childrenAges: number[]
+  hasPets?: boolean
+  petCount?: number
 }
 
 export function SelectRoomButton({
@@ -23,6 +25,8 @@ export function SelectRoomButton({
   checkOut,
   adults,
   childrenAges,
+  hasPets,
+  petCount,
 }: SelectRoomButtonProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -38,6 +42,8 @@ export function SelectRoomButton({
         checkOut,
         adults,
         childrenAges,
+        hasPets,
+        petCount,
         lang,
       })
 

@@ -1,8 +1,71 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useMemo } from 'react'
 import { saveCommercialSettings } from '@/actions/settings'
 import type { PropertyCommercialSettings, ChargeMode } from '@/types/hotelero'
+
+// ─── Currency helpers ─────────────────────────────────────────────────────────
+
+const POPULAR_CURRENCIES = [
+  'USD', 'EUR', 'GBP', 'MXN', 'GTQ', 'COP', 'ARS', 'CLP', 'PEN', 'BRL',
+  'CRC', 'HNL', 'NIO', 'DOP', 'PAB', 'UYU', 'BOB', 'PYG', 'CAD', 'AUD',
+]
+
+function getAllCurrencies(): string[] {
+  try {
+    return Intl.supportedValuesOf('currency')
+  } catch {
+    return POPULAR_CURRENCIES
+  }
+}
+
+function getCurrencyLabel(code: string, locale = 'es'): string {
+  try {
+    const name = new Intl.DisplayNames([locale], { type: 'currency' }).of(code)
+    return name ? `${code} — ${name}` : code
+  } catch {
+    return code
+  }
+}
+
+function CurrencySelect({
+  value,
+  onChange,
+  disabled,
+  className,
+}: {
+  value: string
+  onChange: (v: string) => void
+  disabled: boolean
+  className: string
+}) {
+  const options = useMemo(() => {
+    const all = getAllCurrencies()
+    const popular = POPULAR_CURRENCIES.filter((c) => all.includes(c))
+    const rest = all.filter((c) => !POPULAR_CURRENCIES.includes(c))
+    return { popular, rest }
+  }, [])
+
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      disabled={disabled}
+      className={className}
+    >
+      <optgroup label="Populares">
+        {options.popular.map((c) => (
+          <option key={c} value={c}>{getCurrencyLabel(c)}</option>
+        ))}
+      </optgroup>
+      <optgroup label="Todas">
+        {options.rest.map((c) => (
+          <option key={c} value={c}>{getCurrencyLabel(c)}</option>
+        ))}
+      </optgroup>
+    </select>
+  )
+}
 
 interface CommercialSettingsFormProps {
   propertyId: string
@@ -17,6 +80,8 @@ const DEFAULTS = {
   base_occupancy: 2,
   extra_adult_fee: 0,
   child_policy_enabled: true,
+  pet_policy_enabled: false,
+  pet_fee: 0,
 }
 
 export function CommercialSettingsForm({
@@ -31,6 +96,8 @@ export function CommercialSettingsForm({
   const [extraAdultFee, setExtraAdultFee] = useState(String(s.extra_adult_fee))
   const [pricesIncludeTaxes, setPricesIncludeTaxes] = useState(s.prices_include_taxes)
   const [childPolicyEnabled, setChildPolicyEnabled] = useState(s.child_policy_enabled)
+  const [petPolicyEnabled, setPetPolicyEnabled] = useState(s.pet_policy_enabled ?? false)
+  const [petFee, setPetFee] = useState(String(s.pet_fee ?? 0))
   const [currency, setCurrency] = useState(s.currency)
 
   const [error, setError] = useState<string | null>(null)
@@ -51,6 +118,8 @@ export function CommercialSettingsForm({
         base_occupancy: parseInt(baseOccupancy, 10) || 2,
         extra_adult_fee: parseFloat(extraAdultFee) || 0,
         child_policy_enabled: childPolicyEnabled,
+        pet_policy_enabled: petPolicyEnabled,
+        pet_fee: parseFloat(petFee) || 0,
       })
 
       if (result.error) {
@@ -80,19 +149,12 @@ export function CommercialSettingsForm({
         {/* Moneda */}
         <div>
           <label className="block text-sm font-medium text-foreground mb-1.5">Moneda</label>
-          <select
+          <CurrencySelect
             value={currency}
-            onChange={(e) => setCurrency(e.target.value)}
+            onChange={setCurrency}
             disabled={!canEdit}
             className={inputCls}
-          >
-            <option value="USD">USD — Dólar estadounidense</option>
-            <option value="EUR">EUR — Euro</option>
-            <option value="MXN">MXN — Peso mexicano</option>
-            <option value="COP">COP — Peso colombiano</option>
-            <option value="ARS">ARS — Peso argentino</option>
-            <option value="CLP">CLP — Peso chileno</option>
-          </select>
+          />
         </div>
 
         {/* Modo de cargo */}
@@ -172,6 +234,36 @@ export function CommercialSettingsForm({
             Aplicar política de niños
           </label>
         </div>
+        <div className="flex items-center gap-3">
+          <input
+            id="pet_policy_enabled"
+            type="checkbox"
+            checked={petPolicyEnabled}
+            onChange={(e) => setPetPolicyEnabled(e.target.checked)}
+            disabled={!canEdit}
+            className="w-4 h-4 rounded border-border text-accent-600 focus:ring-accent-500"
+          />
+          <label htmlFor="pet_policy_enabled" className="text-sm text-foreground">
+            Aceptar mascotas
+          </label>
+        </div>
+        {petPolicyEnabled && (
+          <div className="ml-7">
+            <label className="block text-sm font-medium text-foreground mb-1.5">
+              Tarifa por mascota
+              <span className="ml-1 text-xs text-foreground-muted">({currency}/noche)</span>
+            </label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={petFee}
+              onChange={(e) => setPetFee(e.target.value)}
+              disabled={!canEdit}
+              className={inputCls + ' max-w-48'}
+            />
+          </div>
+        )}
       </div>
 
       {canEdit && (

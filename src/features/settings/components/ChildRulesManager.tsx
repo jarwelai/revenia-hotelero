@@ -27,36 +27,45 @@ export function ChildRulesManager({
     setError(null)
 
     startTransition(async () => {
-      const result = await createChildRule({
-        property_id: propertyId,
-        min_age: parseInt(minAge, 10),
-        max_age: parseInt(maxAge, 10),
-        fee_value: parseFloat(feeValue) || 0,
-        applies_per_night: true,
-      })
+      try {
+        const result = await createChildRule({
+          property_id: propertyId,
+          min_age: parseInt(minAge, 10),
+          max_age: parseInt(maxAge, 10),
+          fee_value: parseFloat(feeValue) || 0,
+          applies_per_night: true,
+        })
 
-      if (result.error) {
-        setError(result.error)
-        return
-      }
+        if (result.error) {
+          setError(result.error)
+          return
+        }
 
-      if (result.rule) {
-        setRules((prev) => [...prev, result.rule!].sort((a, b) => a.min_age - b.min_age))
+        if (result.rule) {
+          setRules((prev) => [...prev, result.rule!].sort((a, b) => a.min_age - b.min_age))
+        }
+        setMinAge('')
+        setMaxAge('')
+        setFeeValue('')
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error inesperado al agregar regla')
       }
-      setMinAge('')
-      setMaxAge('')
-      setFeeValue('')
     })
   }
 
   const handleDelete = (ruleId: string) => {
+    setError(null)
     startTransition(async () => {
-      const result = await deleteChildRule(ruleId)
-      if (result.error) {
-        setError(result.error)
-        return
+      try {
+        const result = await deleteChildRule(ruleId)
+        if (result.error) {
+          setError(result.error)
+          return
+        }
+        setRules((prev) => prev.filter((r) => r.id !== ruleId))
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error inesperado')
       }
-      setRules((prev) => prev.filter((r) => r.id !== ruleId))
     })
   }
 

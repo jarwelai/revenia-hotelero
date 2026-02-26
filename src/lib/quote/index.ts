@@ -53,6 +53,8 @@ export interface ComputeQuoteInput {
   checkOut: string        // YYYY-MM-DD
   adults: number          // >= 1
   childrenAges: number[]  // array de edades, puede ser vacío
+  hasPets?: boolean
+  petCount?: number
 }
 
 /**
@@ -63,7 +65,7 @@ export interface ComputeQuoteInput {
  * Si hay un error, retorna QuoteResult con campo `error` poblado.
  */
 export async function computeQuote(input: ComputeQuoteInput): Promise<QuoteResult> {
-  const { propertyId, roomId, checkIn, checkOut, adults, childrenAges } = input
+  const { propertyId, roomId, checkIn, checkOut, adults, childrenAges, hasPets, petCount } = input
 
   const emptyResult: Omit<QuoteResult, 'error'> = {
     nights: [],
@@ -188,7 +190,12 @@ export async function computeQuote(input: ComputeQuoteInput): Promise<QuoteResul
       }
     }
 
-    const raw_subtotal = (base_rate ?? 0) + extras_adults + extras_children
+    // Pet fees: fee por mascota si la política está habilitada
+    const extras_pets = settings?.pet_policy_enabled && hasPets
+      ? (settings.pet_fee ?? 0) * (petCount ?? 0)
+      : 0
+
+    const raw_subtotal = (base_rate ?? 0) + extras_adults + extras_children + extras_pets
     let taxes: number
     let total_rate: number
 
@@ -208,6 +215,7 @@ export async function computeQuote(input: ComputeQuoteInput): Promise<QuoteResul
       base_rate,
       extras_adults,
       extras_children,
+      extras_pets,
       subtotal: raw_subtotal,
       taxes,
       total_rate,
@@ -239,7 +247,7 @@ export async function computeQuote(input: ComputeQuoteInput): Promise<QuoteResul
  * - El algoritmo de cálculo es idéntico.
  */
 export async function computeQuotePublic(input: ComputeQuoteInput): Promise<QuoteResult> {
-  const { propertyId, roomId, checkIn, checkOut, adults, childrenAges } = input
+  const { propertyId, roomId, checkIn, checkOut, adults, childrenAges, hasPets, petCount } = input
 
   const emptyResult: Omit<QuoteResult, 'error'> = {
     nights: [],
@@ -361,7 +369,12 @@ export async function computeQuotePublic(input: ComputeQuoteInput): Promise<Quot
       }
     }
 
-    const raw_subtotal = (base_rate ?? 0) + extras_adults + extras_children
+    // Pet fees: fee por mascota si la política está habilitada
+    const extras_pets = settings?.pet_policy_enabled && hasPets
+      ? (settings.pet_fee ?? 0) * (petCount ?? 0)
+      : 0
+
+    const raw_subtotal = (base_rate ?? 0) + extras_adults + extras_children + extras_pets
     let taxes: number
     let total_rate: number
 
@@ -378,6 +391,7 @@ export async function computeQuotePublic(input: ComputeQuoteInput): Promise<Quot
       base_rate,
       extras_adults,
       extras_children,
+      extras_pets,
       subtotal: raw_subtotal,
       taxes,
       total_rate,
