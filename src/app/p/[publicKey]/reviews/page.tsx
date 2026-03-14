@@ -42,7 +42,7 @@ export default async function PublicReviewsPage({ params, searchParams }: PagePr
   // Reviews paginadas
   const { data: rows } = await supabase
     .from('reviews')
-    .select('id, rating, reviewer_name, reviewer_country, comment, title, featured, reviewed_at')
+    .select('id, rating, reviewer_name, reviewer_country, comment, title, featured, reviewed_at, reply_text')
     .eq('property_id', property.id)
     .eq('status', 'published')
     .order('featured', { ascending: false })
@@ -51,7 +51,7 @@ export default async function PublicReviewsPage({ params, searchParams }: PagePr
 
   const reviews = (rows ?? []) as Pick<
     Review,
-    'id' | 'rating' | 'reviewer_name' | 'reviewer_country' | 'comment' | 'title' | 'featured' | 'reviewed_at'
+    'id' | 'rating' | 'reviewer_name' | 'reviewer_country' | 'comment' | 'title' | 'featured' | 'reviewed_at' | 'reply_text'
   >[]
 
   const totalPages = Math.max(1, Math.ceil(totalReviews / PAGE_SIZE))
@@ -159,6 +159,16 @@ export default async function PublicReviewsPage({ params, searchParams }: PagePr
                     day: 'numeric',
                   })}
                 </p>
+                {review.reply_text && (
+                  <div className="mt-3 pt-3 border-t border-border">
+                    <p className="text-xs font-semibold text-primary-700 uppercase tracking-wider mb-1">
+                      Respuesta del hotel
+                    </p>
+                    <p className="text-sm text-foreground-secondary italic leading-relaxed">
+                      {review.reply_text}
+                    </p>
+                  </div>
+                )}
               </div>
             ))}
           </div>

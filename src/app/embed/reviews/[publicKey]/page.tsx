@@ -56,7 +56,7 @@ export default async function ReviewEmbedPage({ params }: PageProps) {
   // Últimas 10 reviews publicadas, destacadas primero
   const { data: rows } = await supabase
     .from('reviews')
-    .select('id, rating, reviewer_name, reviewer_country, comment, featured, reviewed_at')
+    .select('id, rating, reviewer_name, reviewer_country, comment, featured, reviewed_at, reply_text')
     .eq('property_id', property.id)
     .eq('status', 'published')
     .order('featured', { ascending: false })
@@ -65,7 +65,7 @@ export default async function ReviewEmbedPage({ params }: PageProps) {
 
   const reviews = (rows ?? []) as Pick<
     Review,
-    'id' | 'rating' | 'reviewer_name' | 'reviewer_country' | 'comment' | 'featured' | 'reviewed_at'
+    'id' | 'rating' | 'reviewer_name' | 'reviewer_country' | 'comment' | 'featured' | 'reviewed_at' | 'reply_text'
   >[]
 
   const avgRating = aggregate ? Number(aggregate.average_rating) : 0
@@ -186,6 +186,22 @@ export default async function ReviewEmbedPage({ params }: PageProps) {
               <p style={{ fontSize: '0.8125rem', color: '#475569', margin: 0, lineHeight: 1.5 }}>
                 {review.comment}
               </p>
+            )}
+            {review.reply_text && (
+              <div style={{
+                marginTop: '8px',
+                paddingTop: '8px',
+                borderTop: '1px solid #E2E8F0',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                  <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#1E3A5F', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Respuesta del hotel
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.75rem', color: '#64748B', margin: 0, lineHeight: 1.5, fontStyle: 'italic' }}>
+                  {review.reply_text}
+                </p>
+              </div>
             )}
           </div>
         ))}

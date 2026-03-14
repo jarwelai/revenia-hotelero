@@ -12,6 +12,7 @@
 
 import { createServiceClient } from '@/lib/supabase/server'
 import { sendBookingConfirmation } from '@/lib/email'
+import { emitOperationalEvent, recordPaymentLedgerEntry } from '@/lib/erp'
 
 export interface FinalizeResult {
   success?: boolean
@@ -42,7 +43,68 @@ export async function finalizeBookingPayment(
     console.error('[finalize] Email send failed:', err)
   )
 
+  // JarwelERP: emit payment + confirmation events (non-blocking)
+  emitErpEvents(admin, bookingId, paymentSessionId).catch((err) =>
+    console.error('[finalize] ERP event emission failed:', err)
+  )
+
   return { success: true }
+}
+
+async function emitErpEvents(
+  admin: ReturnType<typeof createServiceClient>,
+  bookingId: string,
+  paymentSessionId: string | null,
+): Promise<void> {
+  const { data: booking } = await admin
+    .from('bookings')
+    .select('property_id, total_amount, currency')
+    .eq('id', bookingId)
+    .single()
+
+  if (!booking) return
+
+  const { data: prop } = await admin
+    .from('properties')
+    .select('org_id')
+    .eq('id', booking.property_id)
+    .single()
+
+  if (!prop?.org_id) return
+
+  // Emit booking.confirmed
+  emitOperationalEvent({
+    orgId: prop.org_id,
+    propertyId: booking.property_id,
+    eventType: 'booking.confirmed',
+    entityType: 'booking',
+    entityId: bookingId,
+    payload: { total_amount: booking.total_amount, currency: booking.currency },
+    actorType: 'webhook',
+  })
+
+  // Emit payment.completed
+  if (paymentSessionId) {
+    emitOperationalEvent({
+      orgId: prop.org_id,
+      propertyId: booking.property_id,
+      eventType: 'payment.completed',
+      entityType: 'payment',
+      entityId: paymentSessionId,
+      payload: { booking_id: bookingId, amount: booking.total_amount, currency: booking.currency },
+      actorType: 'webhook',
+    })
+
+    // Record payment ledger entry
+    recordPaymentLedgerEntry({
+      orgId: prop.org_id,
+      propertyId: booking.property_id,
+      bookingId,
+      paymentSessionId,
+      amount: booking.total_amount ?? 0,
+      currency: booking.currency ?? 'USD',
+    })
+  }
 }
 
 async function sendConfirmationEmail(

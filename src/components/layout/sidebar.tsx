@@ -28,7 +28,7 @@ const navItems: NavItem[] = [
   { href: '/dashboard/bookings', label: 'Reservas', icon: CalendarIcon },
   { href: '/dashboard/reviews', label: 'Reseñas', icon: StarIcon },
   { href: '/dashboard/rates', label: 'Tarifas', icon: CurrencyIcon },
-  { href: '/dashboard/settings', label: 'Configuración', icon: SettingsIcon },
+  { href: '/dashboard/setup', label: 'Configuración', icon: SettingsIcon },
 ]
 
 interface SidebarProps {

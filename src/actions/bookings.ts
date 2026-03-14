@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { computeQuote } from '@/lib/quote'
+import { emitOperationalEvent, resolveGuest, createBookingLedgerEntries } from '@/lib/erp'
 import type { Booking } from '@/types/hotelero'
 
 // ─── createInternalBooking ────────────────────────────────────────────────────
@@ -169,7 +170,58 @@ export async function createInternalBooking(
     return { error: `Error al confirmar reserva: ${confirmError.message}` }
   }
 
-  // ── 7. Email de confirmación (non-blocking) ─────────────────────────────
+  // ── 7. JarwelERP: resolve guest + emit events + ledger (non-blocking) ────
+  const { data: prop } = await supabase
+    .from('properties')
+    .select('org_id')
+    .eq('id', property_id)
+    .single()
+
+  if (prop?.org_id) {
+    const orgId = prop.org_id
+
+    // Resolve or create guest record (CRM)
+    resolveGuest({
+      orgId,
+      fullName: guest_name.trim(),
+      email: guest_email?.trim(),
+      phone: guest_phone?.trim(),
+    }).then((guestId) => {
+      if (guestId) {
+        supabase.from('bookings').update({ guest_id: guestId }).eq('id', booking.id)
+          .then(() => {})
+      }
+    }).catch(() => {})
+
+    // Emit operational events
+    emitOperationalEvent({
+      orgId,
+      propertyId: property_id,
+      eventType: 'booking.confirmed',
+      entityType: 'booking',
+      entityId: booking.id,
+      payload: {
+        guest_name: guest_name.trim(),
+        check_in, check_out,
+        adults, children_count: children_ages.length,
+        total_amount: quoteResult.grand_total,
+        currency: quoteResult.currency,
+        source: 'internal',
+      },
+      actorId: user.id,
+      actorType: 'user',
+    })
+
+    // Create ledger entries
+    createBookingLedgerEntries({
+      orgId,
+      propertyId: property_id,
+      bookingId: booking.id,
+      quote: quoteResult,
+    })
+  }
+
+  // ── 8. Email de confirmación (non-blocking) ─────────────────────────────
   if (guest_email) {
     import('@/lib/email').then(({ sendBookingConfirmation }) =>
       sendBookingConfirmation(guest_email!, {
@@ -230,6 +282,40 @@ export async function cancelBooking(bookingId: string): Promise<CancelBookingRes
     .eq('booking_id', bookingId)
 
   if (nightsError) return { error: nightsError.message }
+
+  // JarwelERP: emit cancellation event (non-blocking)
+  const { data: cancelledBooking } = await supabase
+    .from('bookings')
+    .select('property_id, guest_name, check_in, check_out, total_amount, currency')
+    .eq('id', bookingId)
+    .single()
+
+  if (cancelledBooking) {
+    const { data: prop } = await supabase
+      .from('properties')
+      .select('org_id')
+      .eq('id', cancelledBooking.property_id)
+      .single()
+
+    if (prop?.org_id) {
+      emitOperationalEvent({
+        orgId: prop.org_id,
+        propertyId: cancelledBooking.property_id,
+        eventType: 'booking.cancelled',
+        entityType: 'booking',
+        entityId: bookingId,
+        payload: {
+          guest_name: cancelledBooking.guest_name,
+          check_in: cancelledBooking.check_in,
+          check_out: cancelledBooking.check_out,
+          total_amount: cancelledBooking.total_amount,
+          currency: cancelledBooking.currency,
+        },
+        actorId: user.id,
+        actorType: 'user',
+      })
+    }
+  }
 
   revalidatePath('/dashboard/bookings')
   revalidatePath('/dashboard/calendar')

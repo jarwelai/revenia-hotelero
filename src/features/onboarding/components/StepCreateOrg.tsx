@@ -45,7 +45,7 @@ export function StepCreateOrg({ orgName, onChange }: StepCreateOrgProps) {
         <div className="bg-surface border border-border rounded-xl px-4 py-3">
           <p className="text-xs text-foreground-secondary">Tu identificador único:</p>
           <p className="text-sm font-mono text-foreground mt-0.5">
-            <span className="text-foreground-secondary">hotelero/</span>
+            <span className="text-foreground-secondary">revenia/</span>
             {slug}-<span className="text-foreground-secondary">xxxx</span>
           </p>
         </div>

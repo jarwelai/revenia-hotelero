@@ -10,6 +10,16 @@ export type ReviewSource = 'manual' | 'internal' | 'google' | 'booking' | 'airbn
 export type ReviewStatus = 'published' | 'hidden'
 export type ChargeMode = 'per_room' | 'per_person'
 
+// ─── Property Setup types ───────────────────────────────────────────────────
+export type PropertyType = 'hotel' | 'hostal' | 'boutique' | 'resort' | 'posada' | 'apart-hotel' | 'villa' | 'cabin'
+export type AmenityCategory = 'general' | 'pool' | 'business' | 'wellness' | 'dining' | 'accessibility' | 'outdoor' | 'custom'
+export type ServiceType = 'restaurant' | 'spa' | 'bar' | 'daypass' | 'events' | 'tours' | 'custom'
+export type ReviewType = 'guest_to_property' | 'property_to_guest' | 'internal_note'
+export type ReviewVisibility = 'public' | 'private' | 'internal'
+export type EmbedTheme = 'light' | 'dark'
+export type EmbedLayout = 'vertical' | 'horizontal'
+export type ImageEntityType = 'property' | 'room_type' | 'service'
+
 export interface Org {
   id: string
   name: string
@@ -35,6 +45,24 @@ export interface Property {
   policies_json: Record<string, unknown>
   public_key: string
   created_at: string
+  // ─── Property Setup: identity, location, classification, publishing
+  address?: string | null
+  city?: string | null
+  state_province?: string | null
+  country_iso2?: string | null
+  postal_code?: string | null
+  latitude?: number | null
+  longitude?: number | null
+  phone?: string | null
+  email?: string | null
+  website?: string | null
+  check_in_time?: string | null
+  check_out_time?: string | null
+  star_rating?: number | null
+  property_type?: PropertyType | null
+  slug?: string | null
+  is_published?: boolean
+  hero_image_url?: string | null
 }
 
 export interface RoomType {
@@ -101,6 +129,9 @@ export interface Booking {
   taxes_total: number | null
   has_pets: boolean
   pet_count: number
+  // JarwelERP integration
+  guest_id: string | null
+  erp_booking_id: string | null
 }
 
 export interface BookingNight {
@@ -184,6 +215,7 @@ export interface RatePlanInterval {
   min_los: number | null
   closed: boolean
   priority: number
+  season_id?: string | null
 }
 
 export interface AriCell {
@@ -291,6 +323,15 @@ export interface Review {
   reviewed_at: string
   created_at: string
   updated_at: string
+  reply_text: string | null
+  reply_author: string | null
+  replied_at: string | null
+  reply_synced_to_source: boolean
+  reply_sync_error: string | null
+  // ─── Review model evolution
+  review_type?: ReviewType
+  visibility?: ReviewVisibility
+  guest_id?: string | null
 }
 
 export interface ReviewAggregate {
@@ -300,6 +341,54 @@ export interface ReviewAggregate {
   average_rating: number
   rating_distribution: Record<string, number>
   last_reviewed_at: string | null
+  updated_at: string
+}
+
+// ─── Reviews Module: Source connections, publish rules, Google, super admin ──
+
+export interface ReviewSourceConnection {
+  id: string
+  property_id: string
+  org_id: string
+  source: 'google' | 'tripadvisor'
+  external_place_id: string
+  place_name: string | null
+  place_url: string | null
+  last_synced_at: string | null
+  last_sync_error: string | null
+  created_at: string
+}
+
+export interface ReviewPublishRules {
+  property_id: string
+  auto_publish_enabled: boolean
+  min_rating: number
+  auto_publish_sources: ReviewSource[]
+  created_at: string
+  updated_at: string
+}
+
+export interface GoogleConnection {
+  id: string
+  property_id: string
+  org_id: string
+  google_account_id: string
+  google_email: string | null
+  google_location_id: string | null
+  google_location_name: string | null
+  sync_enabled: boolean
+  last_synced_at: string | null
+  last_sync_error: string | null
+  created_at: string
+  updated_at: string
+  // NOTE: encrypted tokens are NEVER exposed to the client
+}
+
+export interface SuperAdminConfig {
+  id: string
+  property_id: string
+  ai_review_responses_enabled: boolean
+  created_at: string
   updated_at: string
 }
 
@@ -331,6 +420,11 @@ export interface PropertyPublicSettings {
   public_brand_name: string | null
   created_at: string
   updated_at: string
+  // ─── Embed customization
+  embed_primary_color?: string | null
+  embed_border_radius?: number | null
+  embed_theme?: EmbedTheme | null
+  embed_layout?: EmbedLayout | null
 }
 
 export interface PublicContentSlot {
@@ -374,4 +468,148 @@ export interface BookingQuote {
   quote_payload: QuoteResult
   expires_at: string
   created_at: string
+}
+
+// ─── JarwelERP Integration Types ──────────────────────────────────────────────
+
+export interface Guest {
+  id: string
+  org_id: string
+  full_name: string
+  email: string | null
+  phone: string | null
+  country_iso2: string | null
+  language: string | null
+  notes: string | null
+  tags: string[]
+  erp_customer_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface OperationalEvent {
+  id: string
+  org_id: string
+  property_id: string | null
+  event_type: string
+  entity_type: string
+  entity_id: string
+  payload: Record<string, unknown>
+  actor_id: string | null
+  actor_type: 'user' | 'system' | 'webhook' | 'cron'
+  erp_synced_at: string | null
+  erp_sync_error: string | null
+  created_at: string
+}
+
+export interface LedgerEntry {
+  id: string
+  org_id: string
+  property_id: string
+  booking_id: string | null
+  payment_session_id: string | null
+  entry_type: string
+  amount: number
+  currency: string
+  description: string | null
+  night: string | null
+  tax_rule_name: string | null
+  erp_journal_id: string | null
+  erp_account_code: string | null
+  created_at: string
+}
+
+export interface PaymentSession {
+  id: string
+  property_id: string
+  booking_id: string
+  provider: PaymentProvider
+  status: PaymentSessionStatus
+  amount: number
+  currency: string
+  provider_reference: string | null
+  checkout_url: string | null
+  erp_reference: string | null
+  created_at: string
+  updated_at: string
+}
+
+// ─── Property Setup: Amenities, Seasons, Services, Images, Activation ────────
+
+export interface PropertyAmenity {
+  id: string
+  property_id: string
+  category: AmenityCategory
+  code: string
+  name_es: string
+  name_en: string
+  is_highlighted: boolean
+  sort_order: number
+  created_at: string
+}
+
+export interface Season {
+  id: string
+  property_id: string
+  name: string
+  start_date: string
+  end_date: string
+  color: string
+  pricing_overrides: {
+    rates?: Record<string, number>
+    extra_adult_fee?: number
+    base_occupancy?: number
+    pet_fee?: number
+  }
+  restrictions: {
+    min_los?: number
+    closed_room_types?: string[]
+  }
+  priority: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface PropertyService {
+  id: string
+  property_id: string
+  service_type: ServiceType
+  name: string
+  short_description_es: string | null
+  short_description_en: string | null
+  long_description_es: string | null
+  long_description_en: string | null
+  metadata: Record<string, unknown>
+  is_active: boolean
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+export interface PropertyImage {
+  id: string
+  property_id: string
+  entity_type: ImageEntityType
+  entity_id: string | null
+  url: string
+  alt_text_es: string | null
+  alt_text_en: string | null
+  sort_order: number
+  is_hero: boolean
+  created_at: string
+}
+
+export interface ActivationChecklistItem {
+  key: string
+  label_es: string
+  label_en: string
+  weight: number
+  completed: boolean
+}
+
+export interface ActivationChecklist {
+  items: ActivationChecklistItem[]
+  score: number
+  ready_to_publish: boolean
 }

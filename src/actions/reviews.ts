@@ -1,7 +1,10 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { generateReviewResponse } from '@/lib/ai/review-response'
+import { isAiReviewResponsesEnabled } from '@/lib/feature-flags'
+import { getValidAccessToken, replyToReview } from '@/lib/google/client'
 import type { Review, ReviewStatus, ReviewSource } from '@/types/hotelero'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
@@ -273,6 +276,256 @@ export async function deleteReview(reviewId: string): Promise<ReviewDeleteResult
   if (deleteError) return { error: deleteError.message }
 
   await recomputeReviewAggregates(existing.property_id, existing.org_id, supabase)
+
+  revalidatePath('/dashboard/reviews')
+  return {}
+}
+
+// ─── generateAiReviewResponse ─────────────────────────────────────────────────
+
+/**
+ * Generates an AI-drafted response for a review using OpenRouter.
+ * Requires the property to have ai_review_responses_enabled in super_admin_config.
+ * Does NOT save to the DB — the user edits the draft and then calls saveReviewReply.
+ */
+export async function generateAiReviewResponse(
+  reviewId: string,
+): Promise<{ text?: string; error?: string }> {
+  if (!reviewId) return { error: 'reviewId es requerido' }
+
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado' }
+
+  // 1. Load the review (needs property_id for feature flag and property name query)
+  const { data: review, error: reviewError } = await supabase
+    .from('reviews')
+    .select('id, property_id, reviewer_name, rating, comment, language')
+    .eq('id', reviewId)
+    .maybeSingle()
+
+  if (reviewError) return { error: `Error al leer reseña: ${reviewError.message}` }
+  if (!review) return { error: 'Reseña no encontrada o sin acceso' }
+
+  // 2. Verify user is owner or manager of the property
+  const { data: property, error: propError } = await supabase
+    .from('properties')
+    .select('id, org_id, name')
+    .eq('id', review.property_id)
+    .maybeSingle()
+
+  if (propError || !property) return { error: 'Propiedad no encontrada' }
+
+  const { data: membership } = await supabase
+    .from('org_members')
+    .select('role')
+    .eq('org_id', property.org_id)
+    .eq('user_id', user.id)
+    .in('role', ['owner', 'manager'])
+    .maybeSingle()
+
+  if (!membership) return { error: 'Sin permisos. Solo owner o manager pueden usar esta función.' }
+
+  // 3. Check feature flag
+  const aiEnabled = await isAiReviewResponsesEnabled(review.property_id)
+  if (!aiEnabled) {
+    return { error: 'Las respuestas IA no están habilitadas para esta propiedad.' }
+  }
+
+  // 4. Generate response via AI
+  return generateReviewResponse({
+    reviewerName: review.reviewer_name as string | null,
+    rating: review.rating as number,
+    comment: review.comment as string | null,
+    propertyName: property.name as string,
+    lang: (review.language as string | null) ?? 'es',
+  })
+}
+
+// ─── saveReviewReply ──────────────────────────────────────────────────────────
+
+/**
+ * Persists a reply (draft or final) to a review.
+ * Sets reply_synced_to_source=false so that publishReplyToGoogle can pick it up later.
+ */
+export async function saveReviewReply(
+  reviewId: string,
+  replyText: string,
+): Promise<{ error?: string }> {
+  if (!reviewId) return { error: 'reviewId es requerido' }
+
+  const trimmedReply = replyText?.trim()
+  if (!trimmedReply) return { error: 'El texto de respuesta no puede estar vacío' }
+
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado' }
+
+  // Verify user is owner or manager (RLS also enforces this, but we validate explicitly)
+  const { data: review, error: reviewError } = await supabase
+    .from('reviews')
+    .select('id, property_id')
+    .eq('id', reviewId)
+    .maybeSingle()
+
+  if (reviewError) return { error: `Error al leer reseña: ${reviewError.message}` }
+  if (!review) return { error: 'Reseña no encontrada o sin acceso' }
+
+  const { data: property, error: propError } = await supabase
+    .from('properties')
+    .select('org_id')
+    .eq('id', review.property_id)
+    .maybeSingle()
+
+  if (propError || !property) return { error: 'Propiedad no encontrada' }
+
+  const { data: membership } = await supabase
+    .from('org_members')
+    .select('role')
+    .eq('org_id', property.org_id)
+    .eq('user_id', user.id)
+    .in('role', ['owner', 'manager'])
+    .maybeSingle()
+
+  if (!membership) return { error: 'Sin permisos. Solo owner o manager pueden responder reseñas.' }
+
+  const { error: updateError } = await supabase
+    .from('reviews')
+    .update({
+      reply_text: trimmedReply,
+      reply_author: user.email ?? user.id,
+      replied_at: new Date().toISOString(),
+      reply_synced_to_source: false,
+    })
+    .eq('id', reviewId)
+
+  if (updateError) return { error: updateError.message }
+
+  revalidatePath('/dashboard/reviews')
+  return {}
+}
+
+// ─── publishReplyToGoogle ─────────────────────────────────────────────────────
+
+/**
+ * Publishes the saved reply_text to Google Business Profile via the API.
+ * Requires:
+ *   - The review has reply_text set
+ *   - The review source is 'google'
+ *   - The review has an external_uid (Google review resource name)
+ *   - A google_connection exists for the property
+ *
+ * On success: sets reply_synced_to_source=true, reply_sync_error=null.
+ * On failure: sets reply_sync_error to the error message.
+ */
+export async function publishReplyToGoogle(
+  reviewId: string,
+): Promise<{ error?: string }> {
+  if (!reviewId) return { error: 'reviewId es requerido' }
+
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado' }
+
+  // 1. Load the review
+  const { data: review, error: reviewError } = await supabase
+    .from('reviews')
+    .select('id, property_id, source, external_uid, reply_text')
+    .eq('id', reviewId)
+    .maybeSingle()
+
+  if (reviewError) return { error: `Error al leer reseña: ${reviewError.message}` }
+  if (!review) return { error: 'Reseña no encontrada o sin acceso' }
+
+  // 2. Validate prerequisites
+  if (!review.reply_text) {
+    return { error: 'No hay respuesta guardada para publicar. Guarda primero el texto de respuesta.' }
+  }
+
+  if (review.source !== 'google') {
+    return { error: 'Solo se pueden publicar respuestas en reseñas de Google.' }
+  }
+
+  if (!review.external_uid) {
+    return { error: 'La reseña no tiene un identificador externo de Google (external_uid).' }
+  }
+
+  // 3. Verify user permissions
+  const { data: property, error: propError } = await supabase
+    .from('properties')
+    .select('org_id')
+    .eq('id', review.property_id)
+    .maybeSingle()
+
+  if (propError || !property) return { error: 'Propiedad no encontrada' }
+
+  const { data: membership } = await supabase
+    .from('org_members')
+    .select('role')
+    .eq('org_id', property.org_id)
+    .eq('user_id', user.id)
+    .in('role', ['owner', 'manager'])
+    .maybeSingle()
+
+  if (!membership) return { error: 'Sin permisos. Solo owner o manager pueden publicar respuestas.' }
+
+  // 4. Load the google_connection for this property using service client (tokens are sensitive)
+  const admin = createServiceClient()
+
+  const { data: connection, error: connError } = await admin
+    .from('google_connections')
+    .select('id')
+    .eq('property_id', review.property_id)
+    .maybeSingle()
+
+  if (connError) return { error: `Error al cargar conexión de Google: ${connError.message}` }
+  if (!connection) {
+    return { error: 'No hay conexión de Google configurada para esta propiedad. Ve a Configuración para conectar.' }
+  }
+
+  // 5. Get a valid (auto-refreshed) access token
+  let accessToken: string
+  try {
+    accessToken = await getValidAccessToken(connection.id as string)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Error de autenticación con Google'
+    await admin
+      .from('reviews')
+      .update({ reply_sync_error: message })
+      .eq('id', reviewId)
+    revalidatePath('/dashboard/reviews')
+    return { error: message }
+  }
+
+  // 6. Publish the reply to Google
+  try {
+    await replyToReview(accessToken, review.external_uid as string, review.reply_text as string)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Error al publicar en Google'
+    await admin
+      .from('reviews')
+      .update({ reply_sync_error: message })
+      .eq('id', reviewId)
+    revalidatePath('/dashboard/reviews')
+    return { error: message }
+  }
+
+  // 7. Mark as synced
+  const { error: syncError } = await admin
+    .from('reviews')
+    .update({
+      reply_synced_to_source: true,
+      reply_sync_error: null,
+    })
+    .eq('id', reviewId)
+
+  if (syncError) {
+    console.error('[publishReplyToGoogle] Failed to mark as synced:', syncError.message)
+    // Non-fatal — reply was actually published
+  }
 
   revalidatePath('/dashboard/reviews')
   return {}

@@ -11,9 +11,11 @@ export interface ActiveProperty {
   public_key: string
   timezone: string
   currency: string
+  slug: string | null
+  is_published: boolean
 }
 
-const PROPERTY_SELECT = 'id, org_id, name, public_key, timezone, currency'
+const PROPERTY_SELECT = 'id, org_id, name, public_key, timezone, currency, slug, is_published'
 
 /**
  * Resolves the active property for the authenticated user.

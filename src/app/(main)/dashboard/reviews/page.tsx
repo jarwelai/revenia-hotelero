@@ -122,21 +122,26 @@ export default async function ReviewsPage({ searchParams }: PageProps) {
           <p className="mt-1 text-sm text-foreground-secondary">{property.name}</p>
         </div>
         <div className="flex items-center gap-3">
-          {/* Widget público */}
+          <Link
+            href="/dashboard/reviews/discover"
+            className="px-3 py-2 text-sm font-medium text-foreground-secondary border border-border rounded-xl hover:bg-surface transition-colors"
+          >
+            Descubrir resenas
+          </Link>
           <a
             href={`/embed/reviews/${property.public_key}`}
             target="_blank"
             rel="noopener noreferrer"
             className="px-3 py-2 text-sm font-medium text-foreground-secondary border border-border rounded-xl hover:bg-surface transition-colors"
           >
-            Ver widget
+            Widget
           </a>
           {canEdit && (
             <Link
               href="/dashboard/reviews/new"
               className="px-4 py-2 bg-primary-500 text-white text-sm font-medium rounded-xl hover:bg-primary-600 transition-colors"
             >
-              + Nueva reseña
+              + Nueva resena
             </Link>
           )}
         </div>
@@ -258,6 +263,7 @@ export default async function ReviewsPage({ searchParams }: PageProps) {
                 <th className="px-4 py-3 text-left text-xs font-medium text-foreground-muted uppercase tracking-wider hidden md:table-cell">Comentario</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-foreground-muted uppercase tracking-wider hidden lg:table-cell">Origen</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-foreground-muted uppercase tracking-wider">Estado</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-foreground-muted uppercase tracking-wider hidden xl:table-cell">Respuesta</th>
                 {canEdit && (
                   <th className="px-4 py-3 text-right text-xs font-medium text-foreground-muted uppercase tracking-wider">Acciones</th>
                 )}
@@ -270,17 +276,19 @@ export default async function ReviewsPage({ searchParams }: PageProps) {
                   className={review.status === 'hidden' ? 'opacity-60' : ''}
                 >
                   <td className="px-4 py-3">
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-foreground">
-                        {review.reviewer_name ?? '—'}
-                        {review.featured && (
-                          <span className="ml-1.5 text-secondary-500" title="Destacada">★</span>
+                    <Link href={`/dashboard/reviews/${review.id}`} className="block">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-foreground hover:text-primary-500 transition-colors">
+                          {review.reviewer_name ?? '—'}
+                          {review.featured && (
+                            <span className="ml-1.5 text-secondary-500" title="Destacada">★</span>
+                          )}
+                        </span>
+                        {review.reviewer_country && (
+                          <span className="text-xs text-foreground-muted">{review.reviewer_country}</span>
                         )}
-                      </span>
-                      {review.reviewer_country && (
-                        <span className="text-xs text-foreground-muted">{review.reviewer_country}</span>
-                      )}
-                    </div>
+                      </div>
+                    </Link>
                   </td>
                   <td className="px-4 py-3">
                     <StarRating rating={review.rating} size="sm" />
@@ -299,6 +307,17 @@ export default async function ReviewsPage({ searchParams }: PageProps) {
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_LABELS[review.status].classes}`}>
                       {STATUS_LABELS[review.status].label}
                     </span>
+                  </td>
+                  <td className="px-4 py-3 hidden xl:table-cell">
+                    {review.reply_text ? (
+                      review.reply_synced_to_source ? (
+                        <span className="text-xs text-success-600">Sincronizada</span>
+                      ) : (
+                        <span className="text-xs text-warning-600">Borrador</span>
+                      )
+                    ) : (
+                      <span className="text-xs text-foreground-muted">—</span>
+                    )}
                   </td>
                   {canEdit && (
                     <td className="px-4 py-3 text-right">

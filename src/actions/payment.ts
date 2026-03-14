@@ -16,6 +16,7 @@ import { getAvailability } from '@/lib/availability'
 import { finalizeBookingPayment } from '@/lib/payment/finalize'
 import { createRecurrenteCheckout } from '@/lib/payment/recurrente'
 import { createStripeCheckout } from '@/lib/payment/stripe-driver'
+import { emitOperationalEvent, resolveGuest, createBookingLedgerEntries } from '@/lib/erp'
 import type { PublicLang, QuoteResult } from '@/types/hotelero'
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
@@ -158,6 +159,62 @@ export async function createCheckout(
   }
 
   const bookingId = booking.id
+
+  // 5b. JarwelERP: resolve guest + emit booking.created (non-blocking)
+  const { data: orgData } = await admin
+    .from('properties')
+    .select('org_id')
+    .eq('id', property.id)
+    .single()
+
+  if (orgData?.org_id) {
+    const orgId = orgData.org_id
+
+    // Resolve or create guest (CRM)
+    resolveGuest({
+      orgId,
+      fullName: guestName.trim(),
+      email: guestEmail?.trim(),
+      phone: guestPhone?.trim(),
+      countryIso2,
+      language: lang,
+    }).then((guestId) => {
+      if (guestId) {
+        admin.from('bookings').update({ guest_id: guestId }).eq('id', bookingId)
+          .then(() => {})
+      }
+    }).catch(() => {})
+
+    // Emit booking.created event
+    emitOperationalEvent({
+      orgId,
+      propertyId: property.id,
+      eventType: 'booking.created',
+      entityType: 'booking',
+      entityId: bookingId,
+      payload: {
+        guest_name: guestName.trim(),
+        check_in: bqData.check_in,
+        check_out: bqData.check_out,
+        adults: bqData.adults,
+        children_count: childrenAges.length,
+        total_amount: quote.grand_total,
+        currency,
+        source: 'direct',
+        payment_method: paymentMethod,
+        provider,
+      },
+      actorType: 'system',
+    })
+
+    // Create ledger entries
+    createBookingLedgerEntries({
+      orgId,
+      propertyId: property.id,
+      bookingId,
+      quote,
+    })
+  }
 
   // 6. Crear payment_session
   const { data: psData, error: psError } = await admin
